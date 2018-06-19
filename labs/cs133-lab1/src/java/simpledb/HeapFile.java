@@ -22,8 +22,14 @@ public class HeapFile implements DbFile {
      *            the file that stores the on-disk backing store for this heap
      *            file.
      */
+    private int pID;
+    private File pFile;
+    private TupleDesc tpDesc;
     public HeapFile(File f, TupleDesc td) {
         // some code goes here
+        pFile = f;
+        pID = f.getAbsoluteFile().hashCode();
+        tpDesc = td;
     }
 
     /**
@@ -33,7 +39,7 @@ public class HeapFile implements DbFile {
      */
     public File getFile() {
         // some code goes here
-        return null;
+        return pFile;
     }
 
     /**
@@ -47,7 +53,8 @@ public class HeapFile implements DbFile {
      */
     public int getId() {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        //throw new UnsupportedOperationException("implement this");
+        return pID;
     }
 
     /**
@@ -57,19 +64,44 @@ public class HeapFile implements DbFile {
      */
     public TupleDesc getTupleDesc() {
         // some code goes here
-        throw new UnsupportedOperationException("implement this");
+        //throw new UnsupportedOperationException("implement this");
+        return tpDesc;
     }
 
     // see DbFile.java for javadocs
     public Page readPage(PageId pid) {
         // some code goes here
-        return null;
+        try {
+            RandomAccessFile f = new RandomAccessFile(this.pFile,"r");
+            int offset = BufferPool.PAGE_SIZE * pid.pageNumber();
+            byte[] data = new byte[BufferPool.PAGE_SIZE];
+            if (offset + BufferPool.PAGE_SIZE > f.length()) {
+                System.err.println("Page offset exceeds max size, error!");
+                System.exit(1);
+            }
+            f.seek(offset);
+            f.readFully(data);
+            f.close();
+            return new HeapPage((HeapPageId) pid, data);
+        } catch (FileNotFoundException e) {
+            System.err.println("FileNotFoundException: " + e.getMessage());
+            throw new IllegalArgumentException();
+        } catch (IOException e) {
+            System.err.println("Caught IOException: " + e.getMessage());
+            throw new IllegalArgumentException();
+        }
     }
 
     // see DbFile.java for javadocs
     public void writePage(Page page) throws IOException {
         // some code goes here
         // not necessary for lab1
+        RandomAccessFile raf = new RandomAccessFile(this.pFile, "rw");
+        PageId pid = page.getId();
+        int offset = BufferPool.PAGE_SIZE * pid.pageNumber();
+        raf.seek(offset);
+        raf.write(page.getPageData(), 0, BufferPool.PAGE_SIZE);
+        raf.close();
     }
 
     /**
@@ -77,7 +109,8 @@ public class HeapFile implements DbFile {
      */
     public int numPages() {
         // some code goes here
-        return 0;
+        int res =  (int) Math.ceil(this.pFile.length()/BufferPool.PAGE_SIZE);
+        return res;
     }
 
     // see DbFile.java for javadocs
@@ -99,7 +132,7 @@ public class HeapFile implements DbFile {
     // see DbFile.java for javadocs
     public DbFileIterator iterator(TransactionId tid) {
         // some code goes here
-        return null;
+        return new HeapFileIterator(this,tid);
     }
 
 }

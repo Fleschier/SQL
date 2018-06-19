@@ -22,6 +22,9 @@ public class HeapPage implements Page {
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
 
+    private boolean isDirty;
+    private TransactionId dirtyID;
+
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
      * The format of a HeapPage is a set of header bytes indicating
@@ -60,6 +63,8 @@ public class HeapPage implements Page {
         dis.close();
 
         setBeforeImage();
+        isDirty = false;
+        dirtyID = null;
     }
 
     /** Retrieve the number of tuples on this page.
@@ -67,7 +72,8 @@ public class HeapPage implements Page {
     */
     private int getNumTuples() {        
         // some code goes here
-        return 0;
+        int res = (int)Math.floor((BufferPool.getPageSize()*8) / (td.getSize() * 8 + 1));
+        return res;
 
     }
 
@@ -78,7 +84,8 @@ public class HeapPage implements Page {
     private int getHeaderSize() {        
         
         // some code goes here
-        return 0;
+        int res = (int)Math.ceil(((double) this.getNumTuples()) / 8);
+        return res;
                  
     }
     
@@ -112,7 +119,8 @@ public class HeapPage implements Page {
      */
     public HeapPageId getId() {
     // some code goes here
-    throw new UnsupportedOperationException("implement this");
+    //throw new UnsupportedOperationException("implement this");
+        return pid;
     }
 
     /**
@@ -282,7 +290,18 @@ public class HeapPage implements Page {
      */
     public int getNumEmptySlots() {
         // some code goes here
-        return 0;
+        int count = 0;
+        for (int i = 0; i< this.getNumTuples(); i++) {
+            if (!this.isSlotUsed(i)) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // add a public func return nums of available tuples
+    public int getAvailableTuples(){
+        return getNumTuples() - getNumEmptySlots();
     }
 
     /**
@@ -290,7 +309,14 @@ public class HeapPage implements Page {
      */
     public boolean isSlotUsed(int i) {
         // some code goes here
-        return false;
+        int byteNum = i / 8;
+        int bitNum = i % 8;
+        if (byteNum >= header.length || byteNum < 0) {
+            return false;
+        }
+        byte byteWithSlot = header[byteNum];
+        int bitmask = 1 << bitNum;
+        return (byteWithSlot&bitmask) > 0;
     }
 
     /**
@@ -307,7 +333,7 @@ public class HeapPage implements Page {
      */
     public Iterator<Tuple> iterator() {
         // some code goes here
-        return null;
+        return new HeapPageIterator(this);
     }
 
 }
