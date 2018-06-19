@@ -211,6 +211,8 @@ public class TupleDesc implements Serializable {
         // some code goes here
 
         if(o == null) return false;
+        if (!(o instanceof TupleDesc))
+            return false;
         //convert o to TupleDesc
         TupleDesc tpDesc = (TupleDesc) o;
         if(this.getSize() == tpDesc.getSize() && this.numFields() == tpDesc.numFields()){
