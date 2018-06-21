@@ -10,8 +10,7 @@ exec sp_addrolemember 'db_owner', 'marry'  --赋予数据库用户db_owner的权限
 --go exec sp_addrolemember 'db_owner','marry' go
 
 
-grant select,insert,delete,update to marry
-go
+
 
 drop user marry
 drop login marry
